@@ -1,4 +1,4 @@
-# LYEcosystem-Filter
+# LYEcosystem-Filter(LINEヤフー広告ブロックフィルター)
 
 LINE & Yahoo! JAPAN エコシステムに特化した、**「絶対不具合を起こさない（Zero-Breakage）」高精度DNS広告ブロックフィルター**です。
 
