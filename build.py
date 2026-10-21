@@ -2,11 +2,18 @@ import os
 
 # 絶対にブロックしてはならないLINE/Google/決済のコアホワイトリスト
 WHITELIST = {
+    # Google & Android System
     "play.googleapis.com",
     "connectivitycheck.gstatic.com",
     "android.clients.google.com",
     "clients4.google.com",
     "inputtools.google.com",
+    "googleapis.com",
+    "gstatic.com",
+    "google.com",
+    "gvt1.com",
+    
+    # LINE Core Functions (Messaging, Calls, Auth, Images)
     "legy-jp.line-apps.com",
     "vos.line-scdn.net",
     "a.line.me",
@@ -14,6 +21,12 @@ WHITELIST = {
     "wcc-image.line-scdn.net",
     "ch.line-scdn.net",
     "d.line-scdn.net",
+    "obs.line-apps.com",
+    "obs-jp.line-apps.com",
+    
+    # Payments & Utilities
+    "paypay.ne.jp",
+    "linepay.line.me",
 }
 
 def is_whitelisted(domain):
