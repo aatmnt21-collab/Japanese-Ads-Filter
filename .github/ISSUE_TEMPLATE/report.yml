@@ -1,0 +1,28 @@
+name: 広告すり抜け / 機能不具合の報告 (Report Ad or Breakage)
+description: 新しい広告が出た、またはアプリの機能が壊れた場合に報告してください。
+title: "[Report] "
+labels: ["report"]
+body:
+  - type: dropdown
+    id: report-type
+    attributes:
+      label: 報告の種類 (Type of Report)
+      options:
+        - 新しい広告が出た (New Ad Emerged)
+        - LINE/ヤフーの機能が動かなくなった (Feature Broken)
+        - その他 (Other)
+    validations:
+      required: true
+  - type: textarea
+    id: domain-list
+    attributes:
+      label: 対象のドメイン / ログ (Domain / Log)
+      description: NextDNSなどのリアルタイムログで見つけたドメインを入力してください。
+      placeholder: example.line-scdn.net
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: スクリーンショット (Screenshot)
+      description: 広告画面やログのスクリーンショットがあれば貼り付けてください。
