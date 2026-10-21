@@ -1,4 +1,5 @@
 import os
+import socket
 
 # 絶対にブロックしてはならないLINE/Google/決済のコアホワイトリスト
 WHITELIST = {
@@ -29,11 +30,20 @@ WHITELIST = {
     "linepay.line.me",
 }
 
+# LINEヤフーエコシステムに関連する許可ドメインパターン
+LY_ALLOWED_PATTERNS = [
+    "line", "line-scdn", "line-apps", "line-ads", "flvcdn", "slim01",
+    "yahoo", "yimg", "yjtag", "sentry", "facebook", "googletagmanager"
+]
+
 def is_whitelisted(domain):
     for safe in WHITELIST:
         if domain == safe or domain.endswith("." + safe):
             return True
     return False
+
+def is_ly_ecosystem(domain):
+    return any(pattern in domain for pattern in LY_ALLOWED_PATTERNS)
 
 def clean_and_build():
     if not os.path.exists("filter.txt"):
@@ -48,8 +58,14 @@ def clean_and_build():
             
             domain = line.lower().replace("*.", "").replace("||", "").replace("^", "")
             
+            # 1. 安全装置（ホワイトリスト）チェック
             if is_whitelisted(domain):
-                print(f"[SECURITY GUARD] Protected domain detected and removed: {domain}")
+                print(f"[SECURITY GUARD] Protected domain removed: {domain}")
+                continue
+            
+            # 2. LINEヤフー系限定ガード
+            if not is_ly_ecosystem(domain):
+                print(f"[SCOPE GUARD] Non-LY Ecosystem domain removed: {domain}")
                 continue
             
             domains.add(domain)
@@ -58,7 +74,7 @@ def clean_and_build():
 
     header = (
         "! Title: LYEcosystem-Filter (OISD Specification)\n"
-        "! Description: Absolute safety & zero-breakage ad filtering for LINE & Yahoo! JAPAN ecosystem.\n"
+        "! Description: Absolute safety & zero-breakage ad filtering ONLY for LINE & Yahoo! JAPAN ecosystem.\n"
         "! Homepage: https://github.com/aatmnt21-collab/LYEcosystem-Filter\n"
         "! Syntax: AdBlock / NextDNS / AdGuard Compatible\n\n"
     )
