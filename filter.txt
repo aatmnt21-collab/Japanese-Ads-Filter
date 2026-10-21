@@ -1,0 +1,26 @@
+! Title: LYEcosystem-Filter (OISD Specification)
+! Description: Absolute safety & zero-breakage ad filtering for LINE & Yahoo! JAPAN ecosystem.
+! Homepage: https://github.com/aatmnt21-collab/LYEcosystem-Filter
+! Version: 1.0.0
+! Last modified: 2026-10-21
+! Syntax: AdBlock / NextDNS / AdGuard Wildcard Compatible
+
+da.flvcdn.net
+dm.slim01.jp
+news-obs.line-scdn.net
+ads-obs.line-scdn.net
+line-ads.com
+tr.line.me
+obs-ad.line-apps.com
+adp.line.me
+gift-obs.line-scdn.net
+linegame-obs.line-scdn.net
+pagepoker.line-scdn.net
+graph.facebook.com
+www.googletagmanager.com
+im.c.yimg.jp
+apm.yahoo.co.jp
+ly.my.sentry.io
+line-home.flvcdn.net
+gift-media.line-scdn.net
+shop.line-scdn.net
