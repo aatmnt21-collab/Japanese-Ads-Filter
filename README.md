@@ -6,39 +6,9 @@ LINE & Yahoo! JAPAN エコシステムに特化した、**「絶対不具合を�
 
 ---
 
-## 登録URL (NextDNS / AdGuard / Brave 対応)
+## 🚀 登録URL (NextDNS / AdGuard / Brave 対応)
 
 お使いのDNSブロッカーやアプリの「外部フィルター追加（URL指定）」欄に以下のURLを登録してください。
 
 ```text
 [https://raw.githubusercontent.com/aatmnt21-collab/LYEcosystem-Filter/main/filter.txt](https://raw.githubusercontent.com/aatmnt21-collab/LYEcosystem-Filter/main/filter.txt)
-```
-
----
-
-## 設計思想（OISD準拠）
-
-1. **完全なる安全第一（コア機能の保護）**
-   LINEのメッセージ送信、通話、画像キャッシュ、スタンプショップ、LINE Pay/PayPayなどの決済・認証通信を絶対ブロック対象外として定義しています。
-2. **通信ループ・バッテリードレインの防止**
-   アプリが通信拒否に対して無限リトライを起こさないドメインのみを厳選・検証しています。
-3. **2026年10月 LINEヤフー統合対応**
-   システム統合に伴う新広告ドメインの出現や移行に順次追従していきます。
-
----
-
-## コミュニティ協力のお願い（Issue・ログ共有）
-
-LINEアプリのアップデートやLINEヤフーの仕様変更により、**「新しい広告が出てきた」「特定の機能が動かなくなった」**といった現象が発生した場合は、ぜひ情報をお寄せください！
-
-### 協力方法
-1. NextDNSやAdGuardの**「リアルタイムログ」**を開きます。
-2. LINE起動時や問題発生時に流れるドメイン（`*.line-scdn.net` や `*.ly...` など）を確認・スクショします。
-3. このリポジトリの **[Issues](./issues)** タブから報告、またはスクリーンショットを投稿してください。
-
-みんなでログを検証し、常に「100%安全で快適なフィルター」を一緒に作り上げていきましょう！
-
----
-
-## ライセンス
-[MIT License](LICENSE) - 誰でも自由にご利用・ご再配布いただけます。
