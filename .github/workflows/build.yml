@@ -1,0 +1,29 @@
+name: Auto Build & Optimize Filter
+
+on:
+  push:
+    paths:
+      - 'filter.txt'
+      - 'build.py'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-python-version: '3.x'
+
+      - name: Run Build Script
+        run: python build.py
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto: optimize filter, sort domains & generate multi-formats"
+          file_pattern: "filter.txt adblock.txt hosts.txt"
