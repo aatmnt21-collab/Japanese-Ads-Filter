@@ -1,0 +1,14 @@
+! Title: Japanese-Ads-Filter (OISD Specification)
+! Description: Absolute safety & zero-breakage ad filtering ONLY for LINE & Yahoo! JAPAN ecosystem.
+! Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter
+! Syntax: AdBlock / NextDNS / AdGuard Compatible
+
+||click.line-ads.com^
+||da.flvcdn.net^
+||dm.slim01.jp^
+||graph.facebook.com^
+||line-ads.com^
+||line-analytics.com^
+||line-home.flvcdn.net^
+||ly.my.sentry.io^
+||www.googletagmanager.com^
