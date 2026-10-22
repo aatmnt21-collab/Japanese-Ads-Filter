@@ -6,7 +6,14 @@ on:
 
 jobs:
   add-domain:
-    if: contains(github.event.issue.labels.*.name, 'auto-add') || startsWith(github.event.issue.title, '[Add]:')
+    # 実行条件:
+    # 1. 投稿者が「所有者/共同開発者」かつタイトルが「[Add]:」で始まる
+    # 2. または、投稿者に関わらず 'auto-add' ラベルが付与された場合
+    if: >-
+      ((github.event.issue.author_association == 'OWNER' ||
+        github.event.issue.author_association == 'COLLABORATOR') &&
+       startsWith(github.event.issue.title, '[Add]:')) ||
+      contains(github.event.issue.labels.*.name, 'auto-add')
     runs-on: ubuntu-latest
     permissions:
       contents: write
