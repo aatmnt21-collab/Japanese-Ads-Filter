@@ -1,17 +1,17 @@
-# Japanese-ads Filter
- (LINEヤフー広告ブロックフィルター)
+# Japanese-Ads-Filter
+（日本特化広告ブロック）
 
-LINE & Yahoo! JAPAN エコシステムに特化した、**「絶対不具合を起こさないことを目標」にしたDNS広告ブロックフィルター**です。
+LINE & Yahoo! JAPAN エコシステムに特化した、**「絶対不具合を起こさない（Zero-Breakage）」高精度DNS広告ブロックフィルター**です。
 
 メッセージ送受信、写真・動画表示（`vos`）、LINE Pay/PayPay、通話などのコア機能や、Googleシステム・各種決済アプリとの通信を100%保護しながら、トーク画面上部やニュース枠の広告・トラッキング通信のみをピンポイントでブロックします。
 
 ---
 
-## 🚀 登録URL (NextDNS / AdGuard 対応)
+## 🚀 登録URL (NextDNS / AdGuard / Brave 対応)
 
 お使いのDNSブロッカーやアプリの「外部フィルター追加（URL指定）」欄に以下のURLを登録してください。
 
-https://raw.githubusercontent.com/aatmnt21-collab/LYEcosystem-Filter/main/filter.txt
+https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt
 
 ---
 
@@ -33,7 +33,7 @@ LINEアプリのアップデートやLINEヤフーの仕様変更により、**�
 ### 協力方法
 1. NextDNSやAdGuardの**「リアルタイムログ」**を開きます。
 2. LINE起動時や問題発生時に流れるドメイン（`*.line-scdn.net` や `*.ly...` など）を確認・スクショします。
-3. このリポジトリの **[Issues](https://github.com/aatmnt21-collab/LYEcosystem-Filter/issues)** タブから報告、またはスクリーンショットを投稿してください。
+3. このリポジトリの **[Issues](https://github.com/aatmnt21-collab/Japanese-Ads-Filter/issues)** タブから報告、またはスクリーンショットを投稿してください。
 
 みんなでログを検証し、常に「100%安全で快適なフィルター」を一緒に作り上げていきましょう！
 
