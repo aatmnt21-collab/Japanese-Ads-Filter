@@ -24,3 +24,12 @@ ly.my.sentry.io
 line-home.flvcdn.net
 gift-media.line-scdn.net
 shop.line-scdn.net
+ads.yahoo.co.jp
+yads.yahoo.co.jp
+yads.c.yimg.jp
+b.ssp.yahoo.co.jp
+s.yimg.jp
+bc.geocities.yahoo.co.jp
+ad.line-apps.com
+line-analytics.com
+click.line-ads.com
