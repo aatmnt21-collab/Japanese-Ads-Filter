@@ -23,20 +23,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Extract Domain & Append
+      - name: Extract Domain & Append to extra_denylist.txt
         id: process
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          # インジェクション防止対策を施してドメイン抽出
-          DOMAIN=$(echo "$ISSUE_TITLE" | sed 's/[Add]://g' | xargs)
+          # [Add]: プレフィックスを安全に削除（文字クラスの誤認識防止）
+          DOMAIN=$(echo "$ISSUE_TITLE" | sed -E 's/^\[Add\]:\s*//I' | xargs)
           
           if [ -z "$DOMAIN" ]; then
             echo "::error::Domain is empty"
             exit 1
           fi
 
-          echo "$DOMAIN" >> filter.txt
+          # マスター原稿ファイル（extra_denylist.txt）へ追記して一元管理
+          echo "$DOMAIN" >> extra_denylist.txt
           echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
 
       - name: Set up Python
@@ -55,10 +56,14 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add filter.txt adblock.txt hosts.txt
           
-          # 差分の有無で条件分岐（エラー停止を防止）
-          if git diff --staged --quiet; then
+          # 全出力ファイルおよびマスター原稿のステージング
+          git add extra_denylist.txt filter.txt adblock.txt hosts.txt
+          
+          # filter.txt に実際の差分が発生したか厳密判定
+          if git diff --staged --quiet filter.txt; then
+            # 弾かれた場合は extra_denylist.txt への追記を取り消してマスター原稿をクリーンに保つ
+            git checkout extra_denylist.txt
             gh issue comment $ISSUE_NUMBER --body "⚠️ ドメイン \`$ADDED_DOMAIN\` は安全保護規約（ホワイトリスト/対象外サービス/無効ドメイン/重複）に該当したため、追加されませんでした。"
             gh issue close $ISSUE_NUMBER
           else
