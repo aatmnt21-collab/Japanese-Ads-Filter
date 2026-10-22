@@ -1,4 +1,9 @@
-from __future__ import annotations
+#!/usr/bin/env python3
+"""
+Japanese-Ads-Filter Build Engine
+LINE / Yahoo! JAPAN エコシステム専用 広告・トラッカーブロックフィルター自動構築システム
+"""
+
 import os
 import re
 import socket
@@ -6,221 +11,230 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ---------------------------------------------------------------------------
-# 1. 絶対保護ガード（LINE/Yahooのコア機能：ピンポイント指定のみ）
+# 1. 安全保護規約（ホワイトリスト設定）
 # ---------------------------------------------------------------------------
-CRITICAL_WHITELIST = {
-    # LINE 通話・重要メディア・決済
+
+# 最重要コア保護ドメイン（ファイル未存在・破損時でもシステム崩壊を防ぐハードコード領域）
+BASE_WHITELIST = {
     "vos.line-scdn.net",
-    "news-obs.line-scdn.net",
-    "obs.line-scdn.net",
-    "pay.line.me",
-    # Yahoo! JAPAN ニュース画像・検索アセット・決済
     "im.c.yimg.jp",
-    "s.yimg.jp",
-    "news.yahoo.co.jp",
     "paypay.ne.jp",
-    "paypay.jp",
+    "pay.line.me",
 }
 
-WHITELIST_PATTERNS = [
-    r"^im\.c\.yimg\.jp$",
-    r"^news-obs\.line-scdn\.net$",
-    r"^vos\.line-scdn\.net$",
-    r"^pay\.line\.me$",
-    r".*\.paypay\.ne\.jp$",
-    r".*\.paypay\.jp$",
-]
+# 共有TLD・パブリックサフィックス（誤った親判定・剪定事故を防止するホワイトリスト）
+PUBLIC_SUFFIXES = {
+    "co.jp", "ne.jp", "or.jp", "go.jp", "ac.jp", "gr.jp",
+    "com", "net", "org", "info", "me", "jp", "site", "online",
+    "top", "xyz", "tech", "biz", "app", "dev", "io", "store"
+}
+
+# LINE & Yahoo! JAPAN エコシステムドメイン（スコープガード判定用キーワード）
+LY_ECOSYSTEM_KEYWORDS = (
+    "line", "yimg", "yahoo", "yjtag", "line-scdn", "line-apps", "line-corp"
+)
+
+# ---------------------------------------------------------------------------
+# 2. ユーティリティ関数 & ホワイトリスト読み込み
+# ---------------------------------------------------------------------------
+
+def extract_domain(text: str) -> str:
+    """各種フォーマット（AdBlock構文、URL、箇条書き記号等）から純粋なドメイン名を正規抽出"""
+    if not text:
+        return ""
+    
+    # コメント（#）および前後の余分な空白を除去
+    line = text.split("#")[0].strip()
+    if not line:
+        return ""
+    
+    # 箇条書き記号（- や * 等）の除去
+    line = re.sub(r"^[\s\-*\d\.]+\s*", "", line)
+    
+    # AdBlock / ABP 構文 (||domain.com^) の除去
+    line = re.sub(r"^\|\|", "", line)
+    line = re.sub(r"\^.*$", "", line)
+    
+    # URL スキップ (http:// や https://) の除去
+    line = re.sub(r"^https?://", "", line)
+    
+    # パス・ポート番号の切り捨て
+    line = line.split("/")[0].split(":")[0].strip()
+    
+    # RFC準拠ドメイン正規表現バリデーション
+    domain_pattern = r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+    if re.match(domain_pattern, line):
+        return line.lower()
+    
+    return ""
+
+
+def load_whitelist() -> set:
+    """BASE_WHITELIST と extra_whitelist.txt を動的に統合読み込み"""
+    whitelist = set(BASE_WHITELIST)
+    whitelist_file = "extra_whitelist.txt"
+    
+    if os.path.exists(whitelist_file):
+        with open(whitelist_file, "r", encoding="utf-8") as f:
+            for line in f:
+                domain = extract_domain(line)
+                if domain:
+                    whitelist.add(domain)
+                    
+    return whitelist
+
+
+# 動的統合ホワイトリストの生成
+CRITICAL_WHITELIST = load_whitelist()
+
 
 def is_whitelisted(domain: str) -> bool:
-    """100% Zero-Breakage 保証用の安全ガード"""
-    domain = domain.lower().strip(".")
-    for parent in CRITICAL_WHITELIST:
-        if domain == parent or domain.endswith("." + parent):
+    """指定ドメインまたはその親ドメインがホワイトリストに含まれているか判定"""
+    domain = domain.lower().strip()
+    
+    # 直接完全一致
+    if domain in CRITICAL_WHITELIST:
+        return True
+    
+    # サブドメイン親マッチ (例: sub.paypay.ne.jp -> paypay.ne.jp)
+    parts = domain.split(".")
+    for i in range(1, len(parts) - 1):
+        parent = ".".join(parts[i:])
+        if parent in CRITICAL_WHITELIST:
             return True
-    for pattern in WHITELIST_PATTERNS:
-        if re.match(pattern, domain):
-            return True
+            
     return False
 
-# ---------------------------------------------------------------------------
-# 2. スコープ判定（LINE / Yahoo! JAPAN エコシステム限定）
-# ---------------------------------------------------------------------------
-LY_TARGET_KEYWORDS = [
-    "line", "yahoo", "yimg", "yj", "paypay", "sentry", "flvcdn", "slim01",
-    "facebook", "googletagmanager"
-]
 
 def is_ly_ecosystem(domain: str) -> bool:
-    """対象サービス以外の不必要な無関係ドメイン混入をブロック"""
-    domain = domain.lower().strip(".")
-    return any(kw in domain for kw in LY_TARGET_KEYWORDS)
+    """LINE / Yahoo! JAPAN エコシステム関連ドメインかスコープ判定"""
+    domain = domain.lower().strip()
+    return any(keyword in domain for keyword in LY_ECOSYSTEM_KEYWORDS)
 
-# ---------------------------------------------------------------------------
-# 3. TLD / Public Suffix 考慮型 サブドメイン自動削ぎ落とし（軽量化）
-# ---------------------------------------------------------------------------
-# 共有TLD・サフィックスリスト（親ドメインとして誤認識されるのを防止）
-PUBLIC_SUFFIXES = {
-    "com", "net", "org", "co.jp", "ne.jp", "or.jp", "ac.jp", "go.jp",
-    "lg.jp", "co.uk", "me", "io", "app", "dev", "jp"
-}
 
-def prune_subdomains(domains: set[str]) -> set[str]:
-    """親ドメイン（例: line-ads.com）が存在する場合、
-    サブドメイン（例: sub.line-ads.com）を自動削除して劇的に軽量化する。
-    co.jp 等の共有サフィックスが「親」として判定される事故を完全に防止。
-    """
-    sorted_domains = sorted(domains, key=lambda d: (d.count('.'), len(d), d))
-    retained_domains = set()
-
+def prune_subdomains(domains: set) -> set:
+    """共有TLDを保護しながら親ドメインが存在する無駄なサブドメインを自動剪定"""
+    sorted_domains = sorted(domains, key=lambda d: len(d.split(".")))
+    kept_domains = set()
+    
     for domain in sorted_domains:
-        parts = domain.split('.')
-        is_redundant = False
-        for i in range(1, len(parts) - 1):
-            parent = '.'.join(parts[i:])
-            # 共有TLD/サフィックス自体は「親ドメイン」として扱わない
+        parts = domain.split(".")
+        should_keep = True
+        
+        # 親ドメインを順に検証
+        for i in range(1, len(parts)):
+            parent = ".".join(parts[i:])
+            # co.jp 等のパブリックサフィックスは親比較から除外
             if parent in PUBLIC_SUFFIXES:
                 continue
-            if parent in retained_domains:
-                is_redundant = True
+            if parent in kept_domains:
+                should_keep = False
                 break
-        if not is_redundant:
-            retained_domains.add(domain)
-
-    return retained_domains
-
-# ---------------------------------------------------------------------------
-# 4. フォーマット自動クレンジング＆高度抽出
-# ---------------------------------------------------------------------------
-def extract_domain(raw_line: str) -> str | None:
-    """AdBlock記法、Hosts形式、URL、箇条書き記号等から純粋なドメイン名だけを全自動抽出"""
-    line = raw_line.strip()
-    if not line or line.startswith(('!', '#', '//')):
-        return None
-    
-    line = re.sub(r'^[\-\*\•\s]+', '', line)
-    line = re.sub(r'^\|\|', '', line)
-    line = re.sub(r'[\^$].*$', '', line)
-    line = re.sub(r'^(0\.0\.0\.0|127\.0\.0\.1)\s+', '', line)
-    line = re.sub(r'^https?://', '', line)
-    
-    line = line.split('/')[0].split('?')[0].split('#')[0].split(':')[0].strip('.').lower()
-    
-    if re.match(r'^[a-z0-9\-\.]+\.[a-z]{2,}$', line):
-        return line
-    return None
+                
+        if should_keep:
+            kept_domains.add(domain)
+            
+    return kept_domains
 
 # ---------------------------------------------------------------------------
-# 5. IPv4/IPv6対応 ネットワーク一時エラー対策（リトライ・バックオフ付き死活確認）
+# 3. IPv4 / IPv6 デュアルスタック 並列 DNS 死活監視
 # ---------------------------------------------------------------------------
-def check_dns_alive(domain: str, max_retries: int = 2) -> tuple[str, bool]:
-    """1〜2回のリトライ処理（Exponential Backoff）を備えた堅牢な死活確認"""
-    for attempt in range(max_retries + 1):
+
+def check_dns_single(domain: str, retries: int = 2) -> bool:
+    """単一ドメインの DNS 生存確認（AF_UNSPEC により IPv4 / IPv6 両対応）"""
+    for attempt in range(retries):
         try:
-            socket.getaddrinfo(domain, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-            return domain, True
-        except (socket.gaierror, socket.timeout, Exception):
-            if attempt < max_retries:
-                # 失敗時は 1.0秒、2.0秒と段階的に待機して再試行
-                time.sleep(1.0 * (attempt + 1))
-            continue
-    return domain, False
+            res = socket.getaddrinfo(domain, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            if res:
+                return True
+        except socket.gaierror:
+            if attempt < retries - 1:
+                time.sleep(0.2 * (attempt + 1))
+        except Exception:
+            pass
+    return False
 
-# ---------------------------------------------------------------------------
-# 6. メインビルド処理
-# ---------------------------------------------------------------------------
-def build_filters():
-    print("[1/6] 既存ドメインおよび追加拒否リスト（Denylist）を読み込み中...")
-    raw_domains = set()
 
-    source_files = ["filter.txt", "extra_denylist.txt", "denylist.txt", "raw_domains.txt"]
-    for file_path in source_files:
-        if os.path.exists(file_path):
-            print(f"  - 読み込み中: {file_path}")
-            with open(file_path, "r", encoding="utf-8") as f:
-                for line in f:
-                    dom = extract_domain(line)
-                    if dom:
-                        raw_domains.add(dom)
-
-    print(f"  -> 検出された全抽出ドメイン数: {len(raw_domains)} 件")
-
-    print("[2/6] セーフティガード＆スコープチェック適用中...")
-    valid_domains = set()
-    for dom in raw_domains:
-        if is_whitelisted(dom):
-            print(f"  [安全保護 - ホワイトリスト除外]: {dom}")
-            continue
-        if not is_ly_ecosystem(dom):
-            print(f"  [対象外 - スコープ外除外]: {dom}")
-            continue
-        valid_domains.add(dom)
-
-    print(f"  -> ガード通過ドメイン数: {len(valid_domains)} 件")
-
-    print("[3/6] サブドメインの自動削ぎ落とし（TLD考慮軽量化）実行中...")
-    pruned_domains = prune_subdomains(valid_domains)
-    pruned_count = len(valid_domains) - len(pruned_domains)
-    print(f"  -> 軽量化成功: {pruned_count} 件の冗長サブドメインをカット (残り {len(pruned_domains)} 件)")
-
-    print("[4/6] IPv4/IPv6 高速DNS並列生存確認中（リトライ機能有効）...")
-    alive_domains_set = set()
-    dead_domains_count = 0
-
-    socket.setdefaulttimeout(2.5)
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        future_to_domain = {
-            executor.submit(check_dns_alive, dom): dom for dom in pruned_domains
-        }
-        for future in as_completed(future_to_domain):
-            dom, is_alive = future.result()
-            if is_alive:
-                alive_domains_set.add(dom)
-            else:
-                print(f"  [死活チェック - 応答なし（自動削除）]: {dom}")
-                dead_domains_count += 1
-
-    alive_domains = sorted(list(alive_domains_set))
-    print(f"  -> 生存ドメイン数: {len(alive_domains)} 件 (消滅ドメイン: {dead_domains_count} 件除外)")
-
-    # 安全インターロック: ドメインが0件の場合はファイル上書きによる破損を防ぐ
-    if not alive_domains:
-        print("[ERROR] 採用可能なドメインが0件のため、上書き防止インターロックが作動しました。")
-        return
-
-    print("[5/6] マルチフォーマット出力ファイルを自動生成中...")
+def filter_live_domains(domains: set) -> set:
+    """スレッドプールによるドメイン死活監視の並列実行"""
+    live_domains = set()
+    max_workers = min(32, (os.cpu_count() or 1) + 4)
     
-    # 1. filter.txt (メイン AdBlock 形式)
-    with open("filter.txt", "w", encoding="utf-8", newline="\n") as f:
-        f.write("![ Title: Japanese-Ads-Filter ]\n")
-        f.write("![ Description: Zero-breakage ad/tracker filter for LINE & Yahoo! JAPAN ]\n")
-        f.write("![ Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter ]\n")
-        f.write(f"![ Total Domains: {len(alive_domains)} ]\n\n")
-        for dom in alive_domains:
-            f.write(f"||{dom}^\n")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_domain = {executor.submit(check_dns_single, domain): domain for domain in domains}
+        for future in as_completed(future_to_domain):
+            domain = future_to_domain[future]
+            try:
+                if future.result():
+                    live_domains.add(domain)
+            except Exception:
+                pass
+                
+    return live_domains
 
-    # 2. adblock.txt (AdBlock Plus 互換形式)
+# ---------------------------------------------------------------------------
+# 4. メインビルド処理 & 各フォーマット書き出し
+# ---------------------------------------------------------------------------
+
+def build():
+    global CRITICAL_WHITELIST
+    # ビルド実行時に最新の extra_whitelist.txt を再ロード
+    CRITICAL_WHITELIST = load_whitelist()
+    
+    denylist_file = "extra_denylist.txt"
+    raw_domains = set()
+    
+    if os.path.exists(denylist_file):
+        with open(denylist_file, "r", encoding="utf-8") as f:
+            for line in f:
+                domain = extract_domain(line)
+                if domain:
+                    raw_domains.add(domain)
+                    
+    # 1. ホワイトリスト保護 ＆ スコープガード適用
+    filtered_domains = set()
+    for domain in raw_domains:
+        if is_whitelisted(domain):
+            print(f"[SKIP / WHITELISTED] {domain}")
+            continue
+        if not is_ly_ecosystem(domain):
+            print(f"[SKIP / OUT OF SCOPE] {domain}")
+            continue
+        filtered_domains.add(domain)
+        
+    # 2. TLD考慮型 サブドメイン剪定（最速化・軽量化）
+    pruned_domains = prune_subdomains(filtered_domains)
+    
+    # 3. 死活確認（実体チェック）
+    final_domains = sorted(list(filter_live_domains(pruned_domains)))
+    
+    # --- 共通 LF 改行でファイル生成 ---
+    
+    # filter.txt (AdGuard / uBlock 用)
+    with open("filter.txt", "w", encoding="utf-8", newline="\n") as f:
+        f.write("! Title: Japanese Ads Filter (LINE & Yahoo! JAPAN)\n")
+        f.write("! Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter\n")
+        f.write("! License: MIT\n")
+        f.write("!\n")
+        for d in final_domains:
+            f.write(f"||{d}^\n")
+            
+    # adblock.txt (ABP 互換用)
     with open("adblock.txt", "w", encoding="utf-8", newline="\n") as f:
         f.write("[Adblock Plus 2.0]\n")
-        f.write("! Title: Japanese-Ads-Filter\n\n")
-        for dom in alive_domains:
-            f.write(f"||{dom}^\n")
-
-    # 3. hosts.txt (Hosts 形式)
+        f.write("! Title: Japanese Ads Filter (LINE & Yahoo! JAPAN)\n")
+        for d in final_domains:
+            f.write(f"||{d}^\n")
+            
+    # hosts.txt (Pi-hole / Hosts 形式用)
     with open("hosts.txt", "w", encoding="utf-8", newline="\n") as f:
-        f.write("# Title: Japanese-Ads-Filter (Hosts)\n\n")
-        for dom in alive_domains:
-            f.write(f"0.0.0.0 {dom}\n")
+        f.write("# Japanese Ads Filter (Hosts Format)\n")
+        f.write("# https://github.com/aatmnt21-collab/Japanese-Ads-Filter\n")
+        for d in final_domains:
+            f.write(f"0.0.0.0 {d}\n")
+            
+    print(f"Build completed successfully. Total active domains: {len(final_domains)}")
 
-    print(f"[6/6] ビルド完了！ 合計 {len(alive_domains)} 件の最適化済みドメインを出力しました。")
-
-    summary_file = os.getenv("GITHUB_STEP_SUMMARY")
-    if summary_file and os.path.exists(summary_file):
-        with open(summary_file, "a", encoding="utf-8") as f:
-            f.write("### 🚀 Filter Build Summary\n")
-            f.write(f"- **Total Input:** {len(raw_domains)} domains\n")
-            f.write(f"- **Subdomains Cut:** -{pruned_count} domains\n")
-            f.write(f"- **Dead Domains Removed:** -{dead_domains_count} domains\n")
-            f.write(f"- **Final Active Domains:** {len(alive_domains)} domains\n")
 
 if __name__ == "__main__":
-    build_filters()
+    build()
