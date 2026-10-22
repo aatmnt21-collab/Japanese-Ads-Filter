@@ -20,7 +20,8 @@ LINE & Yahoo! JAPAN エコシステムに特化した、**高精度DNS広告ブ�
 
 お使いのDNSブロッカーやアプリの「外部フィルター追加（URL指定）」欄に以下のURLを登録してください。
 
-https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt
+**登録用 Raw URL:**
+`https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt`
 
 ---
 
