@@ -18,15 +18,22 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Run Safety Integration Test
+      - name: Run Safety & Logic Unit Tests
         run: |
           python -c "
           import build
-          # ホワイトリスト誤爆防止の単体テスト
-          assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice/Image domain protected failed!'
-          assert build.is_whitelisted('play.googleapis.com') == True, 'CRITICAL: Google Play domain protected failed!'
-          assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain protected failed!'
-          # 範囲外ドメイン排除テスト
-          assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed!'
-          print('ALL SAFETY TESTS PASSED!')
+          
+          # 1. ホワイトリスト保護テスト
+          assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice/Image domain failed'
+          assert build.is_whitelisted('play.googleapis.com') == True, 'CRITICAL: Google Play domain failed'
+          assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain failed'
+          
+          # 2. 範囲外ドメイン排除テスト
+          assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed'
+          
+          # 3. 入力自動修復・クレンジングテスト (AdBlock記号・URLなど)
+          assert build.clean_domain('||ads-obs.line-scdn.net^') == 'ads-obs.line-scdn.net', 'AdBlock format cleaning failed'
+          assert build.clean_domain('https://im.c.yimg.jp/page/1') == 'im.c.yimg.jp', 'URL format cleaning failed'
+          
+          print('ALL SAFETY & LOGIC TESTS PASSED SUCCESSFULLY!')
           "
