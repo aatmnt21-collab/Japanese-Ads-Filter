@@ -1,4 +1,4 @@
-# Japanese-Ads-Filter
+# Japanese-Ads-Filter（日本特化フィルター）
 
 ![Build Status](https://github.com/aatmnt21-collab/Japanese-Ads-Filter/actions/workflows/build.yml/badge.svg)
 ![License](https://img.shields.io/github/license/aatmnt21-collab/Japanese-Ads-Filter)
