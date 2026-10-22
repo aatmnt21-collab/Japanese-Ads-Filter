@@ -1,20 +1,14 @@
 [Adblock Plus 2.0]
-! Title: Japanese-Ads-Filter
-
+! Title: Japanese Ads Filter (LINE & Yahoo! JAPAN)
 ||apm.yahoo.co.jp^
 ||b92.yahoo.co.jp^
 ||b97.yahoo.co.jp^
-||da.flvcdn.net^
-||dm.slim01.jp^
 ||gift-media.line-scdn.net^
 ||gift-obs.line-scdn.net^
-||graph.facebook.com^
 ||line-home.flvcdn.net^
 ||line-home.line-scdn.net^
 ||linegame-obs.line-scdn.net^
-||ly.my.sentry.io^
 ||pagepoker.line-scdn.net^
 ||shop.line-scdn.net^
 ||tr.line.me^
-||www.googletagmanager.com^
 ||yads.yahoo.co.jp^

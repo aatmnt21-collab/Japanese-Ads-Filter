@@ -1,22 +1,16 @@
-![ Title: Japanese-Ads-Filter ]
-![ Description: Zero-breakage ad/tracker filter for LINE & Yahoo! JAPAN ]
-![ Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter ]
-![ Total Domains: 17 ]
-
+! Title: Japanese Ads Filter (LINE & Yahoo! JAPAN)
+! Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter
+! License: MIT
+!
 ||apm.yahoo.co.jp^
 ||b92.yahoo.co.jp^
 ||b97.yahoo.co.jp^
-||da.flvcdn.net^
-||dm.slim01.jp^
 ||gift-media.line-scdn.net^
 ||gift-obs.line-scdn.net^
-||graph.facebook.com^
 ||line-home.flvcdn.net^
 ||line-home.line-scdn.net^
 ||linegame-obs.line-scdn.net^
-||ly.my.sentry.io^
 ||pagepoker.line-scdn.net^
 ||shop.line-scdn.net^
 ||tr.line.me^
-||www.googletagmanager.com^
 ||yads.yahoo.co.jp^
