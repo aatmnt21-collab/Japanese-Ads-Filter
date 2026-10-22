@@ -1,7 +1,7 @@
 # Japanese-Ads-Filter（日本特化フィルター)
 
 ![Build Status](https://github.com/aatmnt21-collab/Japanese-Ads-Filter/actions/workflows/build.yml/badge.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![License](https://img.shields.io/badge/License-MIT-green.svg)]
 ![Last Commit](https://img.shields.io/github/last-commit/aatmnt21-collab/Japanese-Ads-Filter)
 
 LINE & Yahoo! JAPAN エコシステムに特化した、**高精度DNS広告ブロックフィルター**です。
