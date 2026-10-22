@@ -1,4 +1,4 @@
-! Title: LYEcosystem-Filter (OISD Specification)
+! Title: LYEcosystem-Filte
 ! Description: Absolute safety & zero-breakage ad filtering for LINE & Yahoo! JAPAN ecosystem.
 ! Homepage: https://github.com/aatmnt21-collab/LYEcosystem-Filter
 ! Version: 1.0.0
