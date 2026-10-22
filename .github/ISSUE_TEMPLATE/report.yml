@@ -10,24 +10,24 @@ body:
   - type: dropdown
     id: issue-type
     attributes:
-      label: 報告の種類 (Type)
+      label: "報告の種類 (Type)"
       options:
-        - 広告が消えていない (Ad Unblocked)
-        - アプリの機能が壊れた / 表示がおかしい (Breakage)
-        - その他 (Other)
+        - "広告が消えていない (Ad Unblocked)"
+        - "アプリの機能が壊れた / 表示がおかしい (Breakage)"
+        - "その他 (Other)"
     validations:
       required: true
   - type: input
     id: domain-name
     attributes:
-      label: 対象のドメイン名やURL (Domain / URL)
-      placeholder: 例: ads-obs.line-scdn.net
+      label: "対象のドメイン名やURL (Domain / URL)"
+      placeholder: "例: ads-obs.line-scdn.net"
     validations:
       required: false
   - type: textarea
     id: details
     attributes:
-      label: 詳細状況・リアルタイムログのスクショなど (Details & Screenshots)
-      placeholder: どの画面で発生したか、NextDNS/AdGuardのログなどを記載・貼り付けしてください。
+      label: "詳細状況・リアルタイムログのスクショなど (Details & Screenshots)"
+      placeholder: "どの画面で発生したか、NextDNS/AdGuardのログなどを記載・貼り付けしてください。"
     validations:
       required: true
