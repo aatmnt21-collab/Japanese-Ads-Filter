@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 ![Last Commit](https://img.shields.io/github/last-commit/aatmnt21-collab/Japanese-Ads-Filter)
 
-LINE & Yahoo! JAPAN エコシステムに特化した、**高精度DNS広告ブロックフィルター**です。
+LINE & Yahoo! JAPAN エコシステムに特化した、**高精度DNS広告ブロックフィルター**です。ヤフージャパンなどの大手のみをブロックするためめちゃくちゃ軽量です。汎用なdns公式リストと併用することをお勧めします。
 
 メッセージ送受信、写真・動画表示（`vos`）、LINE Pay/PayPay、通話などのコア機能や、Googleシステム・各種決済アプリとの通信を100%保護しながら、トーク画面上部やニュース枠の広告・トラッキング通信のみをピンポイントでブロックします。
 
