@@ -27,13 +27,14 @@ jobs:
           assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice/Image domain failed'
           assert build.is_whitelisted('play.googleapis.com') == True, 'CRITICAL: Google Play domain failed'
           assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain failed'
+          assert build.is_whitelisted('im.c.yimg.jp') == True, 'CRITICAL: Yahoo News Image domain failed'
           
           # 2. 範囲外ドメイン排除テスト
           assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed'
           
-          # 3. 入力自動修復・クレンジングテスト (AdBlock記号・URLなど)
+          # 3. 入力自動修復・クレンジングテスト
           assert build.clean_domain('||ads-obs.line-scdn.net^') == 'ads-obs.line-scdn.net', 'AdBlock format cleaning failed'
-          assert build.clean_domain('https://im.c.yimg.jp/page/1') == 'im.c.yimg.jp', 'URL format cleaning failed'
+          assert build.clean_domain('https://ads.yahoo.co.jp/page/1') == 'ads.yahoo.co.jp', 'URL format cleaning failed'
           
           print('ALL SAFETY & LOGIC TESTS PASSED SUCCESSFULLY!')
           "
