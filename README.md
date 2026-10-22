@@ -20,8 +20,18 @@ LINE & Yahoo! JAPAN エコシステムに特化した、**高精度DNS広告ブ�
 
 お使いのDNSブロッカーやアプリの「外部フィルター追加（URL指定）」欄に以下のURLを登録してください。
 
-**登録用 Raw URL:**
-https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt
+### 🔗 登録用 Raw URL 一覧
+
+利用するアプリや環境に合わせて以下の URL をコピーして登録してください。
+
+​・メイン（NextDNS / AdGuard / uBlock Origin 用）
+  [https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt](https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filter.txt)
+
+​・Hosts形式(Pi-hole / AdGuard Home //etc/hosts 用)
+[https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/hosts.txt](https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/hosts.txt)
+
+​・ABP 互換形式 (Adblock Plus 等の拡張機能用)
+[https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/adblock.txt](https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/adblock.txt)
 
 ---
 
