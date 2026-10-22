@@ -7,7 +7,7 @@ LINE & Yahoo! JAPAN エコシステムに特化した、**「絶対不具合を�
 
 ---
 
-## 🚀 登録URL (NextDNS / AdGuard / Brave 対応)
+## 🚀 登録URL (NextDNS / AdGuard 対応)
 
 お使いのDNSブロッカーやアプリの「外部フィルター追加（URL指定）」欄に以下のURLを登録してください。
 
