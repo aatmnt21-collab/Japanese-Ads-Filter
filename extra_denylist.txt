@@ -16,3 +16,7 @@ ly.my.sentry.io
 da.flvcdn.net
 dm.slim01.jp
 ads-obs.line-scdn.net
+yads.yahoo.co.jp
+y.yads.jp
+b92.yahoo.co.jp
+b97.yahoo.co.jp
