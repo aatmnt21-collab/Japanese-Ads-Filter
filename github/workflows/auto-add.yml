@@ -1,0 +1,62 @@
+name: Auto Add Domain from Issue
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  add-domain:
+    if: contains(github.event.issue.labels.*.name, 'auto-add') || startsWith(github.event.issue.title, '[Add]:')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Extract Domain & Append
+        id: process
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          # インジェクション防止対策を施してドメイン抽出
+          DOMAIN=$(echo "$ISSUE_TITLE" | sed 's/[Add]://g' | xargs)
+          
+          if [ -z "$DOMAIN" ]; then
+            echo "::error::Domain is empty"
+            exit 1
+          fi
+
+          echo "$DOMAIN" >> filter.txt
+          echo "domain=$DOMAIN" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run Build Script
+        run: python build.py
+
+      - name: Commit, Push and Respond via GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ADDED_DOMAIN: ${{ steps.process.outputs.domain }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add filter.txt adblock.txt hosts.txt
+          
+          # 差分の有無で条件分岐（エラー停止を防止）
+          if git diff --staged --quiet; then
+            gh issue comment $ISSUE_NUMBER --body "⚠️ ドメイン \`$ADDED_DOMAIN\` は安全保護規約（ホワイトリスト/対象外サービス/無効ドメイン/重複）に該当したため、追加されませんでした。"
+            gh issue close $ISSUE_NUMBER
+          else
+            git commit -m "feat: auto-add domain '$ADDED_DOMAIN' from Issue #$ISSUE_NUMBER"
+            git push
+            gh issue comment $ISSUE_NUMBER --body "🚀 ドメイン \`$ADDED_DOMAIN\` の安全検証・追記・自動ビルドが完了しました！"
+            gh issue close $ISSUE_NUMBER
+          fi
