@@ -1,24 +1,17 @@
 from __future__ import annotations
 import os
 import re
-import socket
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ---------------------------------------------------------------------------
-# 1. 絶対保護ガード（LINE/Yahooのコア通信・通話・決済・画像）
+# 1. 絶対保護ガード（LINE/Yahooのコア機能：ピンポイント指定のみ）
 # ---------------------------------------------------------------------------
 CRITICAL_WHITELIST = {
-    # LINE 通話・メッセージ・画像・決済・認証
-    "line.me",
-    "line-apps.com",
-    "line-scdn.net",
+    # LINE 通話・重要メディア・決済
     "vos.line-scdn.net",
     "news-obs.line-scdn.net",
     "obs.line-scdn.net",
     "pay.line.me",
-    # Yahoo! JAPAN ニュース画像・検索・ログイン・決済
-    "yahoo.co.jp",
-    "yimg.jp",
+    # Yahoo! JAPAN ニュース画像・検索アセット・決済
     "im.c.yimg.jp",
     "s.yimg.jp",
     "news.yahoo.co.jp",
@@ -36,10 +29,10 @@ WHITELIST_PATTERNS = [
 ]
 
 def is_whitelisted(domain: str) -> bool:
-    """100% Zero-Breakage 保証用の安全ガード（親・子ドメイン完全チェック）"""
+    """100% Zero-Breakage 保証用の安全ガード"""
     domain = domain.lower().strip()
     
-    # 完全一致またはサブドメインの一致チェック
+    # ピンポイントでの完全一致および指定ドメインのサブドメイン保護
     for parent in CRITICAL_WHITELIST:
         if domain == parent or domain.endswith("." + parent):
             return True
@@ -68,8 +61,7 @@ def is_ly_ecosystem(domain: str) -> bool:
 # 3. 超強力軽量化アルゴリズム（親ドメインが存在する場合、サブドメインを剪定）
 # ---------------------------------------------------------------------------
 def prune_subdomains(domains: set[str]) -> set[str]:
-    """
-    親ドメイン（例: line-ads.com）が存在する場合、
+    """親ドメイン（例: line-ads.com）が存在する場合、
     サブドメイン（例: sub.line-ads.com）を自動削除して劇的に軽量化する
     """
     sorted_domains = sorted(domains, key=lambda d: (d.count('.'), len(d), d))
@@ -78,7 +70,6 @@ def prune_subdomains(domains: set[str]) -> set[str]:
     for domain in sorted_domains:
         parts = domain.split('.')
         is_redundant = False
-        # 最低でもドメイン名 + TLD（例: example.com）の階層を維持してチェック
         for i in range(1, len(parts) - 1):
             parent = '.'.join(parts[i:])
             if parent in retained_domains:
@@ -93,14 +84,15 @@ def prune_subdomains(domains: set[str]) -> set[str]:
 # 4. フォーマット自動クレンジング＆高度抽出
 # ---------------------------------------------------------------------------
 def extract_domain(raw_line: str) -> str | None:
-    """AdBlock記法、Hosts形式、URL、コメント等から純粋なドメイン名だけを全自動抽出"""
+    """AdBlock記法、Hosts形式、URL、箇条書き記号等から純粋なドメイン名だけを全自動抽出"""
     line = raw_line.strip()
     if not line or line.startswith(('!', '#', '//')):
         return None
     
-    # AdBlock記法・URL記法のクレンジング
+    # 箇条書き記号（- や * 、先頭の記号や空白）およびAdBlock記法のクレンジング
+    line = re.sub(r'^[\-\*\•\s]+', '', line)
     line = re.sub(r'^\|\|', '', line)
-    line = re.sub(r'[\^$].*$', '', line)  # ^ や $ 以降のオプション文字を削除
+    line = re.sub(r'[\^$].*$', '', line)
     line = re.sub(r'^(0\.0\.0\.0|127\.0\.0\.1)\s+', '', line)
     line = re.sub(r'^https?://', '', line)
     
@@ -119,7 +111,6 @@ def build_filters():
     print("[1/5] 既存ドメインおよび追加拒否リスト（Denylist）を読み込み中...")
     raw_domains = set()
 
-    # 読み込む対象ファイル（存在すれば自動統合）
     source_files = ["filter.txt", "extra_denylist.txt", "denylist.txt", "raw_domains.txt"]
     for file_path in source_files:
         if os.path.exists(file_path):
@@ -152,7 +143,6 @@ def build_filters():
 
     alive_domains = sorted(list(pruned_domains))
 
-    # 安全インターロック: ドメインが0件の場合はファイル上書きによる破損を防ぐ
     if not alive_domains:
         print("[ERROR] 採用可能なドメインが0件のため、上書き防止インターロックが作動しました。")
         return
@@ -183,7 +173,6 @@ def build_filters():
 
     print(f"[5/5] ビルド完了！ 合計 {len(alive_domains)} 件の最適化済みドメインを出力しました。")
 
-    # 工夫: GitHub Actions のサマリー（画面表示）へ自動レポート書き出し
     summary_file = os.getenv("GITHUB_STEP_SUMMARY")
     if summary_file and os.path.exists(summary_file):
         with open(summary_file, "a", encoding="utf-8") as f:
