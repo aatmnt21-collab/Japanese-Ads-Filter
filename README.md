@@ -18,7 +18,7 @@ https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filte
 
 ---
 
-## 🛡️ 設計思想 & 自動クレンジング機能（OISD準拠）
+## 🛡️ 設計思想 & 自動クレンジング機能
 
 1. **主要機能の快適さ第一（コア機能の保護）**
    LINEのメッセージ送信、通話、画像キャッシュ、スタンプショップ、LINE Pay/PayPayなどの決済・認証通信を絶対ブロック対象外として定義しています。ただし、通信量を減らすためラインニュースやラインのサブ機能は対象です。
