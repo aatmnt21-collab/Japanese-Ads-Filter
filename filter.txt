@@ -7,7 +7,6 @@
 
 da.flvcdn.net
 dm.slim01.jp
-news-obs.line-scdn.net
 ads-obs.line-scdn.net
 line-ads.com
 tr.line.me
