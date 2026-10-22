@@ -1,5 +1,5 @@
-# Japanese-Ads-Filter (Hosts Format)
-0.0.0.0 click.line-ads.com
+# Title: Japanese-Ads-Filter (Hosts)
+
 0.0.0.0 da.flvcdn.net
 0.0.0.0 dm.slim01.jp
 0.0.0.0 graph.facebook.com
