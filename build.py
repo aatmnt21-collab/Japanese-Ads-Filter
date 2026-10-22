@@ -2,6 +2,7 @@ import os
 import re
 import socket
 from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # 絶対にブロックしてはならないLINE/Google/決済のコアホワイトリスト
 WHITELIST = {
@@ -39,8 +40,12 @@ LY_ALLOWED_PATTERNS = [
 ]
 
 def clean_domain(raw_entry):
-    """URLのコピペミスや不要な記号、パス等を削ぎ落として純粋なドメイン名を取り出す"""
+    """URLのコピペミスやAdBlock記号、記号等をパース前に安全に除去して純粋なドメイン名を取り出す"""
     raw_entry = raw_entry.strip().lower()
+    
+    # 記号（||, ^, *, @, コメント）をあらかじめ削除（バグ防止）
+    raw_entry = re.sub(r'^[\|*@.]+', '', raw_entry)
+    raw_entry = re.sub(r'[\^/*]+$', '', raw_entry)
     
     if not raw_entry.startswith(('http://', 'https://')):
         parsed = urlparse('http://' + raw_entry)
@@ -54,14 +59,26 @@ def clean_domain(raw_entry):
     
     return domain.strip()
 
-def is_domain_alive(domain):
-    """DNS解決を実行し、使われていない/存在しないドメイン（Dead Domain）を除外する"""
+def check_single_domain_alive(domain):
+    """単一ドメインのDNS通信チェック（タイムアウト2秒）"""
     try:
+        socket.setdefaulttimeout(2.0)
         socket.gethostbyname(domain)
-        return True
-    except socket.gaierror:
+        return domain, True
+    except (socket.gaierror, socket.timeout):
         print(f"[DEAD DOMAIN REMOVED] DNS resolution failed: {domain}")
-        return False
+        return domain, False
+
+def filter_alive_domains(domains):
+    """マルチスレッドで高速並列通信チェック"""
+    alive_domains = set()
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(check_single_domain_alive, d) for d in domains]
+        for future in as_completed(futures):
+            domain, is_alive = future.result()
+            if is_alive:
+                alive_domains.add(domain)
+    return alive_domains
 
 def is_whitelisted(domain):
     for safe in WHITELIST:
@@ -76,14 +93,14 @@ def clean_and_build():
     if not os.path.exists("filter.txt"):
         return
 
-    domains = set()
+    raw_domains = set()
     with open("filter.txt", "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("!") or line.startswith("#"):
                 continue
             
-            # 1. URL整形・超強力クレンジング（コピペ誤入力救済）
+            # 1. バグ修正版クレンジング
             domain = clean_domain(line)
             if not domain:
                 continue
@@ -97,15 +114,17 @@ def clean_and_build():
             if not is_ly_ecosystem(domain):
                 print(f"[SCOPE GUARD] Non-LY Ecosystem domain removed: {domain}")
                 continue
-            
-            # 4. デッドドメイン（現在使われていないドメイン）チェック
-            if not is_domain_alive(domain):
-                continue
 
-            # 全通過したドメインを追加（setにより自動重複排除）
-            domains.add(domain)
+            raw_domains.add(domain)
 
-    sorted_domains = sorted(list(domains))
+    # 4. 高速並列デッドドメインチェック
+    valid_domains = filter_alive_domains(raw_domains)
+
+    # セーフティ・ロック：ネットワークエラー等で結果が空になった場合は上書きを防止して終了
+    if not valid_domains and raw_domains:
+        raise RuntimeError("[SAFETY INTERLOCK] All domains failed DNS check. Aborting build to prevent data loss.")
+
+    sorted_domains = sorted(list(valid_domains))
 
     header = (
         "! Title: Japanese-Ads-Filter (OISD Specification)\n"
