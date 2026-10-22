@@ -35,7 +35,7 @@ https://raw.githubusercontent.com/aatmnt21-collab/Japanese-Ads-Filter/main/filte
 
 LINEアプリのアップデートやLINEヤフーの仕様変更により、**「新しい広告が出てきた」「特定の機能が動かなくなった」**といった現象が発生した場合は、ぜひ情報をお寄せください！
 
-### 協力方法
+### ☆協力方法
 1. NextDNSやAdGuardの**「リアルタイムログ」**を開きます。
 2. LINE起動時や問題発生時に流れるドメイン（`*.line-scdn.net` や `*.ly...` など）を確認・スクショします。
 3. このリポジトリの **[Issues](https://github.com/aatmnt21-collab/Japanese-Ads-Filter/issues)** タブから報告フォームに従ってご報告ください。
