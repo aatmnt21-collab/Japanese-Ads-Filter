@@ -2,6 +2,7 @@ from __future__ import annotations
 import os
 import re
 import socket
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ---------------------------------------------------------------------------
@@ -55,11 +56,18 @@ def is_ly_ecosystem(domain: str) -> bool:
     return any(kw in domain for kw in LY_TARGET_KEYWORDS)
 
 # ---------------------------------------------------------------------------
-# 3. 超強力軽量化アルゴリズム（親ドメインが存在する場合、サブドメインを剪定）
+# 3. TLD / Public Suffix 考慮型 サブドメイン自動削ぎ落とし（軽量化）
 # ---------------------------------------------------------------------------
+# 共有TLD・サフィックスリスト（親ドメインとして誤認識されるのを防止）
+PUBLIC_SUFFIXES = {
+    "com", "net", "org", "co.jp", "ne.jp", "or.jp", "ac.jp", "go.jp",
+    "lg.jp", "co.uk", "me", "io", "app", "dev", "jp"
+}
+
 def prune_subdomains(domains: set[str]) -> set[str]:
     """親ドメイン（例: line-ads.com）が存在する場合、
-    サブドメイン（例: sub.line-ads.com）を自動削除して劇的に軽量化する
+    サブドメイン（例: sub.line-ads.com）を自動削除して劇的に軽量化する。
+    co.jp 等の共有サフィックスが「親」として判定される事故を完全に防止。
     """
     sorted_domains = sorted(domains, key=lambda d: (d.count('.'), len(d), d))
     retained_domains = set()
@@ -69,6 +77,9 @@ def prune_subdomains(domains: set[str]) -> set[str]:
         is_redundant = False
         for i in range(1, len(parts) - 1):
             parent = '.'.join(parts[i:])
+            # 共有TLD/サフィックス自体は「親ドメイン」として扱わない
+            if parent in PUBLIC_SUFFIXES:
+                continue
             if parent in retained_domains:
                 is_redundant = True
                 break
@@ -86,7 +97,6 @@ def extract_domain(raw_line: str) -> str | None:
     if not line or line.startswith(('!', '#', '//')):
         return None
     
-    # 箇条書き記号および不要記号の削ぎ落とし
     line = re.sub(r'^[\-\*\•\s]+', '', line)
     line = re.sub(r'^\|\|', '', line)
     line = re.sub(r'[\^$].*$', '', line)
@@ -100,15 +110,20 @@ def extract_domain(raw_line: str) -> str | None:
     return None
 
 # ---------------------------------------------------------------------------
-# 5. IPv4/IPv6対応 高速DNS並列死活チェック
+# 5. IPv4/IPv6対応 ネットワーク一時エラー対策（リトライ・バックオフ付き死活確認）
 # ---------------------------------------------------------------------------
-def check_dns_alive(domain: str) -> tuple[str, bool]:
-    """IPv4/IPv6のデュアルスタック対応確認（2秒タイムアウト）"""
-    try:
-        socket.getaddrinfo(domain, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-        return domain, True
-    except (socket.gaierror, socket.timeout, Exception):
-        return domain, False
+def check_dns_alive(domain: str, max_retries: int = 2) -> tuple[str, bool]:
+    """1〜2回のリトライ処理（Exponential Backoff）を備えた堅牢な死活確認"""
+    for attempt in range(max_retries + 1):
+        try:
+            socket.getaddrinfo(domain, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            return domain, True
+        except (socket.gaierror, socket.timeout, Exception):
+            if attempt < max_retries:
+                # 失敗時は 1.0秒、2.0秒と段階的に待機して再試行
+                time.sleep(1.0 * (attempt + 1))
+            continue
+    return domain, False
 
 # ---------------------------------------------------------------------------
 # 6. メインビルド処理
@@ -142,17 +157,17 @@ def build_filters():
 
     print(f"  -> ガード通過ドメイン数: {len(valid_domains)} 件")
 
-    print("[3/6] サブドメインの自動削ぎ落とし（軽量化）実行中...")
+    print("[3/6] サブドメインの自動削ぎ落とし（TLD考慮軽量化）実行中...")
     pruned_domains = prune_subdomains(valid_domains)
     pruned_count = len(valid_domains) - len(pruned_domains)
     print(f"  -> 軽量化成功: {pruned_count} 件の冗長サブドメインをカット (残り {len(pruned_domains)} 件)")
 
-    print("[4/6] IPv4/IPv6 高速DNS並列生存確認中...")
+    print("[4/6] IPv4/IPv6 高速DNS並列生存確認中（リトライ機能有効）...")
     alive_domains_set = set()
     dead_domains_count = 0
 
-    socket.setdefaulttimeout(2.0)
-    with ThreadPoolExecutor(max_workers=30) as executor:
+    socket.setdefaulttimeout(2.5)
+    with ThreadPoolExecutor(max_workers=20) as executor:
         future_to_domain = {
             executor.submit(check_dns_alive, dom): dom for dom in pruned_domains
         }
