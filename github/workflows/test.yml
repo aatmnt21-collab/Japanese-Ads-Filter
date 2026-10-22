@@ -1,0 +1,32 @@
+name: Run Safety Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run Safety Integration Test
+        run: |
+          python -c "
+          import build
+          # ホワイトリスト誤爆防止の単体テスト
+          assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice/Image domain protected failed!'
+          assert build.is_whitelisted('play.googleapis.com') == True, 'CRITICAL: Google Play domain protected failed!'
+          assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain protected failed!'
+          # 範囲外ドメイン排除テスト
+          assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed!'
+          print('ALL SAFETY TESTS PASSED!')
+          "
