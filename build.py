@@ -4,7 +4,7 @@ import socket
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# 絶対にブロックしてはならないLINE/Google/決済のコアホワイトリスト
+# 絶対にブロックしてはならないLINE/Google/決済/ニュース画像のコアホワイトリスト
 WHITELIST = {
     # Google & Android System
     "play.googleapis.com",
@@ -27,14 +27,17 @@ WHITELIST = {
     "d.line-scdn.net",
     "obs.line-apps.com",
     "obs-jp.line-apps.com",
+    "news-obs.line-scdn.net",
     
     # Payments & Utilities
     "paypay.ne.jp",
     "linepay.line.me",
 
-    # Yahoo! JAPAN Core & Auth
+    # Yahoo! JAPAN Core & Auth & Media Images
     "yahoo.co.jp",
     "yimg.jp",
+    "im.c.yimg.jp",
+    "c.yimg.jp",
     "sso.yahoo.co.jp",
     "login.yahoo.co.jp",
     "m.yimg.jp",
@@ -56,7 +59,6 @@ def clean_domain(raw_entry):
     """URLのコピペミスやAdBlock記号、記号等をパース前に安全に除去して純粋なドメイン名を取り出す"""
     raw_entry = raw_entry.strip().lower()
     
-    # 記号（||, ^, *, @, コメント）をあらかじめ削除
     raw_entry = re.sub(r'^[\|*@.]+', '', raw_entry)
     raw_entry = re.sub(r'[\^/*]+$', '', raw_entry)
     
@@ -73,14 +75,13 @@ def clean_domain(raw_entry):
     return domain.strip()
 
 def check_single_domain_alive(domain):
-    """単一ドメインのDNS通信チェック（タイムアウト5秒に拡張）"""
+    """単一ドメインのDNS通信チェック"""
     try:
         socket.setdefaulttimeout(5.0)
         socket.gethostbyname(domain)
         return domain, True
     except (socket.gaierror, socket.timeout, Exception):
         print(f"[DEAD/TIMEOUT DOMAIN SKIPPED] DNS resolution skipped for: {domain}")
-        # ネットワーク一時障害による全滅を防ぐため、通信エラー時も安全ならビルド対象として保持
         return domain, True
 
 def filter_alive_domains(domains):
@@ -114,26 +115,21 @@ def clean_and_build():
             if not line or line.startswith("!") or line.startswith("#"):
                 continue
             
-            # 1. クレンジング
             domain = clean_domain(line)
             if not domain:
                 continue
 
-            # 2. 安全装置（ホワイトリスト）チェック
             if is_whitelisted(domain):
                 print(f"[SECURITY GUARD] Protected domain removed: {domain}")
                 continue
             
-            # 3. LINEヤフー系限定ガード
             if not is_ly_ecosystem(domain):
                 print(f"[SCOPE GUARD] Non-LY Ecosystem domain removed: {domain}")
                 continue
 
             raw_domains.add(domain)
 
-    # 4. 高速並列デッドドメインチェック
     valid_domains = filter_alive_domains(raw_domains)
-
     sorted_domains = sorted(list(valid_domains))
 
     header = (
@@ -143,15 +139,12 @@ def clean_and_build():
         "! Syntax: AdBlock / NextDNS / AdGuard Compatible\n\n"
     )
 
-    # 1. Wildcard / NextDNS (filter.txt)
     with open("filter.txt", "w", encoding="utf-8") as f:
         f.write(header + "\n".join(sorted_domains) + "\n")
 
-    # 2. AdBlock / Brave (adblock.txt)
     with open("adblock.txt", "w", encoding="utf-8") as f:
         f.write(header + "\n".join([f"||{d}^" for d in sorted_domains]) + "\n")
 
-    # 3. Hosts (hosts.txt)
     with open("hosts.txt", "w", encoding="utf-8") as f:
         f.write("# Japanese-Ads-Filter (Hosts Format)\n" + "\n".join([f"0.0.0.0 {d}" for d in sorted_domains]) + "\n")
 
