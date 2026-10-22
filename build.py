@@ -1,5 +1,4 @@
 import os
-import socket
 
 # 絶対にブロックしてはならないLINE/Google/決済のコアホワイトリスト
 WHITELIST = {
@@ -73,9 +72,9 @@ def clean_and_build():
     sorted_domains = sorted(list(domains))
 
     header = (
-        "! Title: LYEcosystem-Filter (OISD Specification)\n"
+        "! Title: Japanese-Ads-Filter (OISD Specification)\n"
         "! Description: Absolute safety & zero-breakage ad filtering ONLY for LINE & Yahoo! JAPAN ecosystem.\n"
-        "! Homepage: https://github.com/aatmnt21-collab/LYEcosystem-Filter\n"
+        "! Homepage: https://github.com/aatmnt21-collab/Japanese-Ads-Filter\n"
         "! Syntax: AdBlock / NextDNS / AdGuard Compatible\n\n"
     )
 
@@ -89,7 +88,7 @@ def clean_and_build():
 
     # 3. Hosts (hosts.txt)
     with open("hosts.txt", "w", encoding="utf-8") as f:
-        f.write("# LYEcosystem-Filter (Hosts Format)\n" + "\n".join([f"0.0.0.0 {d}" for d in sorted_domains]) + "\n")
+        f.write("# Japanese-Ads-Filter (Hosts Format)\n" + "\n".join([f"0.0.0.0 {d}" for d in sorted_domains]) + "\n")
 
     print(f"[SUCCESS] Built {len(sorted_domains)} domains successfully.")
 
