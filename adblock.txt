@@ -4,6 +4,8 @@
 ||adp.line.me^
 ||ads-obs.line-scdn.net^
 ||apm.yahoo.co.jp^
+||b92.yahoo.co.jp^
+||b97.yahoo.co.jp^
 ||da.flvcdn.net^
 ||dm.slim01.jp^
 ||gift-media.line-scdn.net^
@@ -20,3 +22,4 @@
 ||shop.line-scdn.net^
 ||tr.line.me^
 ||www.googletagmanager.com^
+||yads.yahoo.co.jp^

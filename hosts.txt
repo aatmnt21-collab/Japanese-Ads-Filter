@@ -3,6 +3,8 @@
 0.0.0.0 adp.line.me
 0.0.0.0 ads-obs.line-scdn.net
 0.0.0.0 apm.yahoo.co.jp
+0.0.0.0 b92.yahoo.co.jp
+0.0.0.0 b97.yahoo.co.jp
 0.0.0.0 da.flvcdn.net
 0.0.0.0 dm.slim01.jp
 0.0.0.0 gift-media.line-scdn.net
@@ -19,3 +21,4 @@
 0.0.0.0 shop.line-scdn.net
 0.0.0.0 tr.line.me
 0.0.0.0 www.googletagmanager.com
+0.0.0.0 yads.yahoo.co.jp
