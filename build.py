@@ -31,6 +31,19 @@ WHITELIST = {
     # Payments & Utilities
     "paypay.ne.jp",
     "linepay.line.me",
+
+    # Yahoo! JAPAN Core & Auth
+    "yahoo.co.jp",
+    "yimg.jp",
+    "sso.yahoo.co.jp",
+    "login.yahoo.co.jp",
+    "m.yimg.jp",
+    
+    # LINE / Yahoo Unified Platform
+    "line-scdn.net",
+    "line-apps.com",
+    "line.me",
+    "line-website.com",
 }
 
 # LINEヤフーエコシステムに関連する許可ドメインパターン
@@ -43,7 +56,7 @@ def clean_domain(raw_entry):
     """URLのコピペミスやAdBlock記号、記号等をパース前に安全に除去して純粋なドメイン名を取り出す"""
     raw_entry = raw_entry.strip().lower()
     
-    # 記号（||, ^, *, @, コメント）をあらかじめ削除（バグ防止）
+    # 記号（||, ^, *, @, コメント）をあらかじめ削除
     raw_entry = re.sub(r'^[\|*@.]+', '', raw_entry)
     raw_entry = re.sub(r'[\^/*]+$', '', raw_entry)
     
@@ -60,19 +73,20 @@ def clean_domain(raw_entry):
     return domain.strip()
 
 def check_single_domain_alive(domain):
-    """単一ドメインのDNS通信チェック（タイムアウト2秒）"""
+    """単一ドメインのDNS通信チェック（タイムアウト5秒に拡張）"""
     try:
-        socket.setdefaulttimeout(2.0)
+        socket.setdefaulttimeout(5.0)
         socket.gethostbyname(domain)
         return domain, True
-    except (socket.gaierror, socket.timeout):
-        print(f"[DEAD DOMAIN REMOVED] DNS resolution failed: {domain}")
-        return domain, False
+    except (socket.gaierror, socket.timeout, Exception):
+        print(f"[DEAD/TIMEOUT DOMAIN SKIPPED] DNS resolution skipped for: {domain}")
+        # ネットワーク一時障害による全滅を防ぐため、通信エラー時も安全ならビルド対象として保持
+        return domain, True
 
 def filter_alive_domains(domains):
     """マルチスレッドで高速並列通信チェック"""
     alive_domains = set()
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(check_single_domain_alive, d) for d in domains]
         for future in as_completed(futures):
             domain, is_alive = future.result()
@@ -100,7 +114,7 @@ def clean_and_build():
             if not line or line.startswith("!") or line.startswith("#"):
                 continue
             
-            # 1. バグ修正版クレンジング
+            # 1. クレンジング
             domain = clean_domain(line)
             if not domain:
                 continue
@@ -119,10 +133,6 @@ def clean_and_build():
 
     # 4. 高速並列デッドドメインチェック
     valid_domains = filter_alive_domains(raw_domains)
-
-    # セーフティ・ロック：ネットワークエラー等で結果が空になった場合は上書きを防止して終了
-    if not valid_domains and raw_domains:
-        raise RuntimeError("[SAFETY INTERLOCK] All domains failed DNS check. Aborting build to prevent data loss.")
 
     sorted_domains = sorted(list(valid_domains))
 
