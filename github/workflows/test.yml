@@ -21,20 +21,38 @@ jobs:
       - name: Run Safety & Logic Unit Tests
         run: |
           python -c "
+          import os
           import build
-          
-          # 1. ホワイトリスト保護テスト
-          assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice/Image domain failed'
-          assert build.is_whitelisted('play.googleapis.com') == True, 'CRITICAL: Google Play domain failed'
-          assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain failed'
+
+          # 1. ハードコード・ホワイトリスト保護テスト
+          assert build.is_whitelisted('vos.line-scdn.net') == True, 'CRITICAL: LINE Voice domain failed'
           assert build.is_whitelisted('im.c.yimg.jp') == True, 'CRITICAL: Yahoo News Image domain failed'
+          assert build.is_whitelisted('paypay.ne.jp') == True, 'CRITICAL: PayPay domain failed'
+          assert build.is_whitelisted('pay.line.me') == True, 'CRITICAL: LINE Pay domain failed'
+
+          # 2. スコープガードテスト
+          assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed: Unrelated domain allowed'
+          assert build.is_ly_ecosystem('line-ads.com') == True, 'SCOPE GUARD failed: Target domain rejected'
+
+          # 3. 入力自動修復・抽出テスト (extract_domain)
+          assert build.extract_domain('||ads-obs.line-scdn.net^') == 'ads-obs.line-scdn.net', 'AdBlock format cleaning failed'
+          assert build.extract_domain('https://ads.yahoo.co.jp/page/1') == 'ads.yahoo.co.jp', 'URL format cleaning failed'
+          assert build.extract_domain('- gift-media.line-scdn.net') == 'gift-media.line-scdn.net', 'Bullet format cleaning failed'
+
+          # 4. TLD考慮型 サブドメイン剪定テスト
+          test_domains = {'line-ads.com', 'sub.line-ads.com', 'example.co.jp'}
+          pruned = build.prune_subdomains(test_domains)
+          assert 'sub.line-ads.com' not in pruned, 'Subdomain pruning failed'
+          assert 'line-ads.com' in pruned, 'Parent domain lost during pruning'
+          assert 'example.co.jp' in pruned, 'Shared TLD error: example.co.jp was incorrectly pruned'
+
+          # 5. extra_whitelist.txt 動的読み込み・結合テスト
+          test_domain = 'test-dynamic-whitelist.line-scdn.net'
+          with open('extra_whitelist.txt', 'a', encoding='utf-8') as f:
+              f.write(f'\n{test_domain}\n')
           
-          # 2. 範囲外ドメイン排除テスト
-          assert build.is_ly_ecosystem('doubleclick.net') == False, 'SCOPE GUARD failed'
-          
-          # 3. 入力自動修復・クレンジングテスト
-          assert build.clean_domain('||ads-obs.line-scdn.net^') == 'ads-obs.line-scdn.net', 'AdBlock format cleaning failed'
-          assert build.clean_domain('https://ads.yahoo.co.jp/page/1') == 'ads.yahoo.co.jp', 'URL format cleaning failed'
-          
+          build.CRITICAL_WHITELIST = build.load_whitelist()
+          assert build.is_whitelisted(test_domain) == True, 'Dynamic extra_whitelist.txt loading failed'
+
           print('ALL SAFETY & LOGIC TESTS PASSED SUCCESSFULLY!')
           "
