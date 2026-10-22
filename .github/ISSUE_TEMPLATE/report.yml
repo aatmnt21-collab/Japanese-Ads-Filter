@@ -1,28 +1,33 @@
-name: 広告すり抜け / 機能不具合の報告 (Report Ad or Breakage)
-description: 新しい広告が出た、またはアプリの機能が壊れた場合に報告してください。
-title: "[Report] "
-labels: ["report"]
+name: 🐛 不具合・新広告の報告 (Report Issue)
+description: ブロック漏れの広告や、アプリの動作不具合を報告します
+title: "[Report]: "
+labels: ["triage"]
 body:
-  - type: dropdown
-    id: report-type
+  - type: markdown
     attributes:
-      label: 報告の種類 (Type of Report)
+      value: |
+        ご報告ありがとうございます！より良いフィルター作りのため、以下の項目にご協力をお願いします。
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: 報告の種類 (Type)
       options:
-        - 新しい広告が出た (New Ad Emerged)
-        - LINE/ヤフーの機能が動かなくなった (Feature Broken)
+        - 広告が消えていない (Ad Unblocked)
+        - アプリの機能が壊れた / 表示がおかしい (Breakage)
         - その他 (Other)
     validations:
       required: true
-  - type: textarea
-    id: domain-list
+  - type: input
+    id: domain-name
     attributes:
-      label: 対象のドメイン / ログ (Domain / Log)
-      description: NextDNSなどのリアルタイムログで見つけたドメインを入力してください。
-      placeholder: example.line-scdn.net
+      label: 対象のドメイン名やURL (Domain / URL)
+      placeholder: 例: ads-obs.line-scdn.net
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: 詳細状況・リアルタイムログのスクショなど (Details & Screenshots)
+      placeholder: どの画面で発生したか、NextDNS/AdGuardのログなどを記載・貼り付けしてください。
     validations:
       required: true
-  - type: textarea
-    id: screenshot
-    attributes:
-      label: スクリーンショット (Screenshot)
-      description: 広告画面やログのスクリーンショットがあれば貼り付けてください。
