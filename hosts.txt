@@ -1,10 +1,21 @@
 # Title: Japanese-Ads-Filter (Hosts)
 
+0.0.0.0 adp.line.me
+0.0.0.0 ads-obs.line-scdn.net
+0.0.0.0 apm.yahoo.co.jp
 0.0.0.0 da.flvcdn.net
 0.0.0.0 dm.slim01.jp
+0.0.0.0 gift-media.line-scdn.net
+0.0.0.0 gift-obs.line-scdn.net
 0.0.0.0 graph.facebook.com
 0.0.0.0 line-ads.com
 0.0.0.0 line-analytics.com
 0.0.0.0 line-home.flvcdn.net
+0.0.0.0 line-home.line-scdn.net
+0.0.0.0 linegame-obs.line-scdn.net
 0.0.0.0 ly.my.sentry.io
+0.0.0.0 obs-ad.line-apps.com
+0.0.0.0 pagepoker.line-scdn.net
+0.0.0.0 shop.line-scdn.net
+0.0.0.0 tr.line.me
 0.0.0.0 www.googletagmanager.com
